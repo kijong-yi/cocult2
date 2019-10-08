@@ -42,6 +42,7 @@ rm(base1,base2,base3,base4,mat1,mat1.inext)
 
 
 ### estimate seed size/decay rate/amp rate ----
+set.seed(42)
 S <- rrarefy(population, 3*10^5)
 NSsimul <- function(start = 3*10^5,
                     seed = 5000,
@@ -82,8 +83,8 @@ abline(v= c(8000,50000,100000),h=c(5000,7500), lty = 2, col = "grey")
 mtext("Simulation-based estimation of amplification-decay rate",outer = T, cex = 1.2, font=2,line=2.5)
 mtext("initial = 3*10^5, seed = 5000, seed.amp.rate = 0.363, decay.rate = 0.85, cycle = 19",outer = T, cex = 1, font=1,line=1)
 
-## question
-par(mfrow=c(2,2),mar = c(4,4,1,1),oma=c(0,0,5,0))
+## questional  ----
+par(mfrow=c(2,2),mar = c(4,4,1,1),oma=c(0,0,5,0), asp=1,pty="s")
 plot(rowSums(counts[,1:5]), counts[,6], xlim = c(0,1000), ylim = c(0,1000), col=  "#00000030")
 plot(rowSums(counts[,1:5]), counts[,6], xlim = c(0,100), ylim = c(0,100), col=  "#00000030")
 plot(rowSums(counts[,1:5]), counts[,7], xlim = c(0,1000), ylim = c(0,1000), col=  "#00000030")
@@ -121,7 +122,7 @@ seed.distribution.summary <- data.frame("%" = c(40,20,10,7,5,3,1,0.5,0.1), check
 
 htmlTable::interactiveTable(seed.distribution.summary) 
 
-## simulation
+## multi-clonal expansion simulation ----
 spawn_specificity <- function(){
   a = rep(1,length(population))
   ai = 1:length(a)
@@ -179,44 +180,32 @@ S.color[S.color=="black"] = "#00000030"
 
 S.inext <- iNEXT(S, q=0, knots=200, se=F, conf=0.95, nboot=1,doMC = T)
 
+
+### example simulation & real data ----
 par(mfrow=c(2,3))
 plot(S.inext, se=F, show.main = F)
 
-# example simulation data
 plot(S[,"B1"],S[,"S1_1"], col=S.color[,1],xlim=c(0,2800),ylim = c(0,2800), cex=ifelse(S.color[,1] == "#00000030", 1,2), pch=16);abline(0,1, lty = 2, col="grey")
 plot(S[,"B1"],S[,"S1_1"], col=S.color[,1],xlim=c(0,150),ylim = c(0,150), cex=ifelse(S.color[,1] == "#00000030", 1,2), pch=16);abline(0,1, lty = 2, col="grey")
 
-# example real count data
 plot(rowSums(counts[,1:5]), counts[,"03.1516"], col = "#00000030", xlim = c(0,2800), ylim = c(0,2800));abline(0,1, lty = 2, col="grey")
 plot(rowSums(counts[,1:5]), counts[,"03.1516"], col = "#00000030", xlim = c(0,150), ylim = c(0,150));abline(0,1, lty = 2, col="grey")
-
 
 plot(S.inext$iNextEst[[21]]$m,S.inext$iNextEst[[21]]$qD, type = "l", xlim = c(0,60000), ylim = c(0,15000))
 lines(S.inext$iNextEst[[1]]$m,S.inext$iNextEst[[1]]$qD)
 abline(h=5000,v=0,lty=2,col="grey")
-text(40000,10000,expression(F(x)== over(x*a,a+b)) )
+text(40000,10000,expression(X_adj== X*over(a+b,a)) )
 text(c(3000,20000),5200,c("a","b"))
 
 
-# standardization of counts
+## standardization of counts ----
 
-colnames(counts)
-hist(colSums(counts>0),breaks = 20)
-barplot(colSums(counts>0) %>% sort,las=2)
-colSums(counts>0) %>% sort
-
-counts.basesum <- rowSums(counts[,1:5])
-
-A <- cbind(counts.basesum, counts)
-
+# calculation
+A <- cbind(rowSums(counts[,1:5]), counts)
 colnames(A)[1] <- "basesum"
+
 A.inext <- iNEXT(A, q=0, knots=200, se=F, conf=0.95, 
                       nboot=1,doMC = T)
-
-plot(A.inext,se=F,show.main=F)
-abline(h=2660)
-barplot(colSums(A>0),las=2)
-sort(colSums(A>0))[1:5]
 
 A.sizeforq2660 <- lapply(A.inext$iNextEst, function(o){
   splinefun(x=o$qD,y=o$m)(2660)
@@ -226,103 +215,85 @@ A.sizeforq1372 <- lapply(A.inext$iNextEst, function(o){
   splinefun(x=o$qD,y=o$m)(1372)
 }) %>% do.call(rbind,.)
 
-barplot(t(A.sizeforq2660), las = 2)
-barplot(t(A.sizeforq2660), las = 2,ylim=c(0,20000))
-barplot(t(A.sizeforq1372), las = 2,ylim=c(0,20000))
-
 
 A.sizefactor1 = A.sizeforq2660[1,]/A.sizeforq2660
 A.sizefactor2 = A.sizeforq1372[1,]/A.sizeforq1372
 
-barplot(t(A.sizefactor1), las = 2)
-barplot(t(A.sizefactor2), las = 2)
-
 A.std1 = A %>% sweep(2,A.sizefactor1, `/`)
 A.std2 = A %>% sweep(2,A.sizefactor2, `/`)
 
+
+# plot
+
+par(mfrow = c(2,3))
+plot(S.inext$iNextEst[[21]]$m,S.inext$iNextEst[[21]]$qD, type = "l", xlim = c(0,60000), ylim = c(0,15000))
+lines(S.inext$iNextEst[[1]]$m,S.inext$iNextEst[[1]]$qD)
+abline(h=5000,v=0,lty=2,col="grey")
+text(40000,10000,expression(X_adj== X*over(a+b,a)) )
+text(c(3000,20000),5200,c("a","b"))
+
+barplot(colSums(A>0) %>% sort,las=2, main = "number of clones", cex.names = 0.7)
+abline(h=sort(colSums(A>0))[c(1,3)],col=c("red","blue"))
+
+colSums(A>0) %>% sort %>% .[1:5]
+
+plot(A.inext, se = F, show.main = F, show.legend = F, col = "grey",ylim=c(0,20000))
+abline(h=sort(colSums(counts>0))[c(1,3)],col=c("red","blue"))
+text(120000,sort(colSums(A>0))[c(1,3)],sort(colSums(A>0))[c(1,3)],col=c("red","blue"), adj=c(1,-0.5))
+sort(colSums(A>0))[1:5]
+
+barplot(t(1/A.sizefactor1), las = 2, main = "size factor for q=2660")
+barplot(t(1/A.sizefactor2), las = 2, main = "size factor for q=1372")
+
+# subtraction of cutoff by negative quantile ----
 A.std.sub1<- foreach(i = 7:35, .combine=cbind) %dopar% {
   tmp <- A.std1[,i]-A.std1[,1]
-  tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.01) %>% {-.}
+  tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.001) %>% {-.}
   pmax(tmp-tmp.cutoff,0)
 }
 
 A.std.sub2<- foreach(i = 7:35, .combine=cbind) %dopar% {
   tmp <- A.std2[,i]-A.std2[,1]
-  tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.01) %>% {-.}
+  tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.001) %>% {-.}
   pmax(tmp-tmp.cutoff,0)
 }
-par(mfrow=c(2,2))
-barplot(colSums(A.std.sub1))
-barplot(colSums(A.std.sub2))
-barplot(colSums(A.std.sub1>0))
-barplot(colSums(A.std.sub2>0))
+colnames(A.std.sub1) <- colnames(A.std)[7:35]
+colnames(A.std.sub2) <- colnames(A.std)[7:35]
 
+A.std.cutoff1 <- foreach(i = 7:35, .combine=c) %dopar% {
+  tmp <- A.std1[,i]-A.std1[,1]
+  tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.001) %>% {-.}
+}
+A.std.cutoff2 <- foreach(i = 7:35, .combine=c) %dopar% {
+  tmp <- A.std2[,i]-A.std2[,1]
+  tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.001) %>% {-.}
+}
+names(A.std.cutoff1) <- colnames(A)[7:35]
+names(A.std.cutoff2) <- colnames(A)[7:35]
 
-# 
-# plot(rowSums(counts.std[,1:5]), counts.std[,10], col = "#00000020", xlim = c(0,1000),ylim=c(0,1000))
-# will take long time to plot!
-par(mfrow = c(5,7), mar = c(1,1,1,1),oma=c(0,0,3,0),pty="s")
-par(mfrow=c(1,2),pty="s",mar=c(5,4,1,1),oma=c(0,0,3,0))
-# for(i in 7:35){
-  i = 7
-  
+# example histogram and scatterplot
+par(mfcol = c(2,4), mar = c(5,4,3,1),oma=c(0,0,0,0))
+for(i in c(7,10,15,20)){
   tmp <- A.std[,i]-A.std[,1]
-  hist(tmp,breaks=1000,xlim=c(-300,300),ylim=c(0,500),main="")
-  tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.01) %>% {-.}
+  tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.001) %>% {-.}
+  hist(tmp,freq=F,breaks=c(-Inf,-60:60*5,Inf),xlim=c(-300,300),ylim=c(0,0.001),main=colnames(A.std)[i])
   abline(v=c(-tmp.cutoff,tmp.cutoff),col=c("blue","red"),lty=2)
-  ifelse(tmp > tmp.cutoff,"red","#00000020") %>%
-    plot(A.std[,1], A.std[,i], xlab="",ylab="", col = ., xlim = c(0,100),ylim=c(0,100),asp=1);
+  legend("topright",legend=c(sum(tmp > tmp.cutoff),sum(tmp < -tmp.cutoff)),pch=c("+","-"),bty="n")
+  plot(A.std[,1], A.std[,i], xlab="",ylab="", col = ifelse(tmp > tmp.cutoff,"red",ifelse(tmp < -tmp.cutoff,"blue","#00000020")), xlim = c(0,200),ylim=c(0,200),asp=1,
+       main = colnames(A.std)[i]);
   abline(0,1,col="grey",lty=2);
   abline(-tmp.cutoff,1,col="blue",lty=2)
   abline( tmp.cutoff,1,col="red",lty=2)
-  mtext(colnames(A.std)[i],outer=T,font=2,cex=1.2)
-  table(tmp > tmp.cutoff)
-  table(tmp < -tmp.cutoff)
-  i=i+1
-# }
-
-A.std.sub<- foreach(i = 7:35, .combine=cbind) %dopar% {
-  tmp <- A.std[,i]-A.std[,1]
-  tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.01) %>% {-.}
-  pmax(tmp-tmp.cutoff,0)
-}
-colnames(A.std.sub) <- colnames(A.std)[7:35]
-A.std.sub
-
-colSums(A.std.sub) %>% barplot(las=2,cex.names = 0.8)
-colSums(A.std.sub>0) %>% barplot(las=2,cex.names = 0.8)
-
-A.std.sub.cor <- cor(A.std.sub)
-A.std.sub.cor2 <- cor(A.std.sub2)
-A.std.cor <- cor(A.std)
-A.cor <- cor(A)
-
-adj.corrplot = function(x,...){
-  x[x==1]=NA
-  x[is.na(x)] = max(x,na.rm=T)
-  corrplot::corrplot(x,...)
 }
 
+# plot adj.count.sum, number of positive clone, and cutoffs
+par(mfcol = c(2,3))
+barplot(colSums(A.std.sub1), main = "Sum of adjusted,nq-subtracted count, q=2660")
+barplot(colSums(A.std.sub2), main = "Sum of adjusted,nq-subtracted count, q=1372")
+barplot(colSums(A.std.sub1>0), main = "clone count, q=2660")
+barplot(colSums(A.std.sub2>0), main = "clone count, q=1372")
+barplot(A.std.cutoff1, main = "0.001 quantile of negative values of A_adj-B_adj with q=2660")
+barplot(A.std.cutoff2, main = "0.001 quantile of negative values of A_adj-B_adj with q=1372")
 
 
-A.std.sub.cor %>% {.[.==1]=NA;.[is.na(.)]=max(.,na.rm=T);.} %>%
-  corrplot::corrplot(corr = ., is.corr=F,method="square",order ="hclust")
-A.std.sub.cor2 %>% {.[.==1]=NA;.[is.na(.)]=max(.,na.rm=T);.} %>%
-  corrplot::corrplot(corr = ., is.corr=F,method="square",order ="hclust")
 
-corrplot::corrplot(A.std.sub.cor,)
-corrplot::corrplot(A.std.cor)
-corrplot::corrplot(A.cor)
-
-adj.corrplot(A.cor[6:35,6:35],is.corr = F,method = "square",)
-adj.corrplot(A.std.cor[6:35,6:35],is.corr = F,method = "square")
-adj.corrplot(A.std.sub.cor,is.corr = F,method = "square")
-
-
-tmp.A <- read_rds("count.div-std.nq-sub.Rds")
-
-
-tmp.A[1:10,6:10]
-A.std.sub[1:10,1:5]
-
-  
