@@ -268,7 +268,7 @@ A.std.cutoff2 <- foreach(i = 7:35, .combine=c) %dopar% {
   tmp <- A.std2[,i]-A.std2[,1]
   tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.001) %>% {-.}
 }
-names(A.std.cutoff1) <- colnames(A)[7:35]
+names(A.std.cutoff1) <- colnames(A)[7:35] 
 names(A.std.cutoff2) <- colnames(A)[7:35]
 
 # example histogram and scatterplot
