@@ -1,0 +1,427 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+read_migec <- function(dir) {
+    A = read_tsv(paste(dir,"cdr_A_filter","TCRA.filtered.cdrblast.txt", sep = "/"),
+           col_types = "ddcccccdddddddd")
+    B = read_tsv(paste(dir,"cdr_B_filter","TCRB.filtered.cdrblast.txt", sep = "/"),
+           col_types = "ddcccccdddddddd")
+    a <- A$Percentage; names(a) <- paste0("(A)",A$`CDR3 amino acid sequence`)
+  b <- B$Percentage; names(b) <- paste0("(B)",B$`CDR3 amino acid sequence`)
+  c(a,b)
+}
+
+```
+
+```{r}
+(dir_list <- system("ls migec/* -d", intern = T))
+```
+
+```{r}
+#dir_list[1] %>% read_migec
+
+l <- dir_list %>% lapply(read_migec)
+u <- unique(unlist(lapply(l, names)))
+ll <- lapply(l, function(x){o <- x[u]; o[is.na(o)] <- 0; o})
+lm <- do.call(cbind, ll)
+colnames(lm) <- basename(dir_list)
+rownames(lm) <- u
+head(lm)
+png("rep01.png",1800,1800)
+plot(as.data.frame(lm[,c(1,8,2,15,3,7,4,21,27,28,31,32,19)]))
+dev.off()
+
+plot(as.data.frame(lm))
+
+```
+
+
+```{r fig.height=8, fig.width=8}
+# library(heatmaply)
+my_cor <- cor(lm)
+corrplot::corrplot(my_cor,order = "hclust",hclust.method = "ward.D")
+```
+
+```{r}
+hc <- hclust(d = as.dist(1-my_cor),method = "ward.D")
+plot(hc)
+```
+
+
+```{r fig.height=5, fig.width=5}
+colnames(lm)
+plot(as.data.frame(lm[,c(3,7)]))
+basemean <- rowMeans(lm[,c(19,31,32,33,34)])
+hist(basemean)
+cut(basemean,breaks=30) %>% table
+Hmisc::cut2(basemean, c(0,0.00001,0.0001,0.001,0.002,0.004,0.008,0.016,0.032)) %>% table
+
+
+CPCOLS <- c("#DBDBDB60", "#D4D4D460", "#66666660", "#5E5E5E60", "#454545", "#363636", "#242424", "#141414", "#0D0D0D")
+PCH <- c(21,24)[grepl("^\\(A",rownames(lm))+1] 
+
+plot(as.data.frame(lm[,c(3,7)])*100,
+     xlim  = c(0,25),
+     xlab = "rep1 (%)",
+     ylab = "rep2 (%)")
+
+plot(as.data.frame(lm[,c(3,7)])*100,
+     pch=PCH,
+     xlim  = c(0,25),
+     xlab = "rep1 (%)",
+     ylab = "rep2 (%)",
+     col="grey50", 
+     las = 1,
+     asp=1,
+     bg=CPCOLS[Hmisc::cut2(basemean, c(0,0.00001,0.0001,0.001,0.002,0.004,0.008,0.016))]);text(11,12,"(A)CAYRSSHYTGANSKLTF (0.02%)", cex=0.7, adj = c(0.5,0)); text(14,9, "(B)CSVSVEGKADTQYF (0.04%)", cex=0.7,adj=c(0.5,1)); text(4,2,"(0.2%)",cex=0.7,adj = c(0.5,0));text(7,1,"(0)",cex=0.7,adj = c(0.5,0));text(1,23,"(0)",cex=0.7,adj = c(0.5,0));text(1,13,"(0)",cex=0.7,adj = c(0.5,0));text(1,12,"(0)",cex=0.7,adj = c(0.5,0))
+
+# plot_ly(x = ~100*lm[,3],
+#         y = ~100*lm[,7], 
+#         color = ~Hmisc::cut2(100*basemean,
+#                              100*c(0,0.00001,0.0001,0.001,0.002,0.004,0.008,0.016,0.032)),
+#         colors = CPCOLS,
+#         text = ~paste("base:",100*basemean),
+#         type = 'scatter',
+#         mode='markers') %>%
+#   layout(xaxis = list(title = "Rep 1", range = c(0,25)),
+#          yaxis = list(title = "Rep 2", range = c(0,25),scaleanchor = "x"))
+
+```
+
+
+```{r fig.height=5, fig.width=5}
+CPCOLS <- c("#DBDBDB60", "#D4D4D460", "#66666660", "#5E5E5E60", "#454545", "#363636", "#242424", "#141414", "#0D0D0D")
+View(cbind(lm[,c(3,20)],basemean)*100)
+
+
+plot(as.data.frame(lm[,c(3,20)])*100,
+     pch=PCH,
+     asp=1,
+     xlim = c(0,17),
+     xlab = "1516 (%)",
+     ylab = "1577 (%)",
+     col="grey50", 
+     las = 1,
+     bg=CPCOLS[Hmisc::cut2(basemean, c(0,0.00001,0.0001,0.001,0.002,0.004,0.008,0.016))]);text(13,16,"(B)CSVSVEGKADTQYF (0.04%)",cex=.7,adj=c(0.5,1));text(11,0,"(A)CAYRSSHYTGANSKLTF (0.02%)",cex=.7,adj=c(0.5,-1));text(7,11,"(B)CASRAGTGTYGYTF (0)", cex=.7,adj=c(0.5,-1)); text(6.3,8,"(A)CALSEGAGNQFYF (0)", cex=.7,adj=c(0.5,2)); text(0.3,11,"(0)",cex=.7,adj=c(0,-0.5)); text(0.3,10.5,"(0.003%)",cex=.7,adj=0)
+
+
+# plot_ly(x = ~100*lm[,3],
+#         y = ~100*lm[,20],
+#         color = ~Hmisc::cut2(100*basemean,
+#                              100*c(0,0.00001,0.0001,0.001,0.002,0.004,0.008,0.016,0.032)),
+#         colors = CPCOLS,
+#         text = ~paste(rownames(lm),":",100*basemean),
+#         type = 'scatter',
+#         mode='markers') %>%
+#   layout(xaxis = list(title = "Rep 1", range = c(0,17)),
+#          yaxis = list(title = "Rep 2", range = c(0,17),scaleanchor = "x"))
+```
+
+
+```{r fig.height=5, fig.width=5}
+plot(as.data.frame(lm[,c(31,32)])*100,
+     pch=PCH,
+     asp=1,
+     # xlim = c(0,17),
+     xlab = "base rep1 (%)",
+     ylab = "base rep2 (%)",
+     col="grey50", 
+     las = 1,
+     bg=CPCOLS[Hmisc::cut2(basemean, c(0,0.00001,0.0001,0.001,0.002,0.004,0.008,0.016))]);text(13,16,"(B)CSVSVEGKADTQYF (0.04%)",cex=.7,adj=c(0.5,1));text(11,0,"(A)CAYRSSHYTGANSKLTF (0.02%)",cex=.7,adj=c(0.5,-1));text(7,11,"(B)CASRAGTGTYGYTF (0)", cex=.7,adj=c(0.5,-1)); text(6.3,8,"(A)CALSEGAGNQFYF (0)", cex=.7,adj=c(0.5,2)); text(0.3,11,"(0)",cex=.7,adj=c(0,-0.5)); text(0.3,10.5,"(0.003%)",cex=.7,adj=0)
+
+```
+
+```{r fig.height=5, fig.width=5}
+View(cbind(lm[,c(5,22)],basemean)*100)
+plot(as.data.frame(lm[,c(5,22)])*100,
+     pch=PCH,
+     asp=1,
+     xlim = c(0,35),
+     xlab = "1514 (%)",
+     ylab = "1596 (%)",
+     col="grey50", 
+     las = 1,
+     bg=CPCOLS[Hmisc::cut2(basemean, c(0,0.00001,0.0001,0.001,0.002,0.004,0.008,0.016))]);text(11,36,"(A)CAVANTGNQFYF (0.03%)",cex=.7,adj=c(0.5,2)); text(0,13.9,"(0)",cex=.7,adj=c(-1,0.5)); text(0,12.2,"(0)",cex=.7,adj=c(-1,0.5)); text(9,10.7,"(B)CATGKDGATGELFF (0.07%)",cex=.7,adj=c(0,0.5));text(1.5,9,"(B)CSAQNSETGELFF (0.05%)",cex=.7,adj=c(0,0.5)); text(0,7.4,"(0)",cex=.7,adj=c(-1,0.5));text(0,6.3,"(0)",cex=.7,adj=c(-1,0.5));text(11.3,0.2,"(0)",cex=.7,adj=c(0,0.5))
+text(11,0,"(A)CAYRSSHYTGANSKLTF (0.02%)",cex=.7,adj=c(0.5,-1));text(7,11,"(B)CASRAGTGTYGYTF (0)", cex=.7,adj=c(0.5,-1)); text(6.3,8,"(A)CALSEGAGNQFYF (0)", cex=.7,adj=c(0.5,2)); text(0.3,11,"(0)",cex=.7,adj=c(0,-0.5)); text(0.3,10.5,"(0.003%)",cex=.7,adj=0)
+
+```
+
+
+```{r fig.height=5, fig.width=5}
+View(cbind(lm[,c(6,11)],basemean)*100)
+plot(as.data.frame(lm[,c(6,11)])*100,
+     pch=PCH,
+     asp=1,
+     xlim = c(0,35),
+     xlab = "1449 (%)",
+     ylab = "1590 (%)",
+     col="grey50", 
+     las = 1,
+     bg=CPCOLS[Hmisc::cut2(basemean, c(0,0.00001,0.0001,0.001,0.002,0.004,0.008,0.016))]);text(27,21,"(A)CAGQLRNQGGKLIF (0.1%)",cex=.7,adj=c(0.5,2));text(0.7,31.6,"(0)",cex=.7,adj=c(0,0.5));text(0.7,16.3,"(0)",cex=.7,adj=c(0,0.5));text(0.7,12,"(0.0015%)",cex=.7,adj=c(0,0.5)); text(8.5,0.2,"(0.03%)", cex=.7, adj=c(0,0.5)); text(8,1.7,"(0.09%)", cex=.7, adj=c(0,0.5));text(6,3.5,"(0.008%)", cex=.7, adj=c(0,0.5)) 
+text(0,13.9,"(0)",cex=.7,adj=c(-1,0.5)); text(0,12.2,"(0)",cex=.7,adj=c(-1,0.5))
+text(9,10.7,"(B)CATGKDGATGELFF (0.07%)",cex=.7,adj=c(0,0.5));text(1.5,9,"(B)CSAQNSETGELFF (0.05%)",cex=.7,adj=c(0,0.5)); text(0,7.4,"(0)",cex=.7,adj=c(-1,0.5));text(0,6.3,"(0)",cex=.7,adj=c(-1,0.5));text(11.3,0.2,"(0)",cex=.7,adj=c(0,0.5))
+text(11,0,"(A)CAYRSSHYTGANSKLTF (0.02%)",cex=.7,adj=c(0.5,-1));text(7,11,"(B)CASRAGTGTYGYTF (0)", cex=.7,adj=c(0.5,-1)); text(6.3,8,"(A)CALSEGAGNQFYF (0)", cex=.7,adj=c(0.5,2)); text(0.3,11,"(0)",cex=.7,adj=c(0,-0.5)); text(0.3,10.5,"(0.003%)",cex=.7,adj=0)
+
+```
+
+```{r fig.height=5, fig.width=5}
+View(cbind(lm[,c(2,15)],basemean)*100)
+plot(as.data.frame(lm[,c(2,15)])*100,
+     pch=PCH,
+     asp=1,
+     xlim = c(0,40),
+     xlab = "1459 rep 1 (%)",
+     ylab = "1459 rep 2 (%)",
+     col="grey50", 
+     las = 1,
+     bg=CPCOLS[Hmisc::cut2(basemean, c(0,0.00001,0.0001,0.001,0.002,0.004,0.008,0.016))]);text(27,0,"(0.005%)",cex=.7,adj=c(0.5,-1)); text(27,0,"(0.01%)",cex=.7,adj=c(0.5,-2.4));text(19,0,"(0.006%)",cex=.7,adj=c(0.5,-1));text(1.5,39,"(0.18%)",cex=.7,adj=c(0,0.5));text(1.5,22.3,"(0.03%)",cex=.7,adj=c(0,0.5));text(1.5,14.6,"(0)",cex=.7,adj=c(0,0.5))
+
+```
+
+
+
+```{r fig.height=5, fig.width=5}
+View(cbind(lm[,c(4,21)],basemean)*100)
+plot(as.data.frame(lm[,c(4,21)])*100,
+     pch=PCH,
+     asp=1,
+     xlim = c(0,30),
+     xlab = "1599 rep 1 (%)",
+     ylab = "1599 rep 2 (%)",
+     col="grey50", 
+     las = 1,
+     bg=CPCOLS[Hmisc::cut2(basemean, c(0,0.00001,0.0001,0.001,0.002,0.004,0.008,0.016))]);text(1.2,27.3,"(0.05%)",cex=.7,adj=c(0,0));text(1.2,23.6,"(0.02%)",cex=.7,adj=c(0,0));text(1.2,22.4,"(0)",cex=.7,adj=c(0,0));text(1.2,15.5,"(0)",cex=.7,adj=c(0,0)); text(21,0,"(0)",cex=.7,adj=c(.5,-2));text(15,0,"(0)",cex=.7,adj=c(0,0));text(12.1,0,"(0.0015%)",cex=.7,adj=c(.5,-2));text(8,0,"(0)",cex=.7,adj=c(.5,-2))
+```
+
+```{r fig.height=5, fig.width=5}
+View(cbind(lm[,c(1,8)],basemean)*100)
+plot(as.data.frame(lm[,c(1,8)])*100,
+   pch=PCH,
+   asp=1,
+   xlim = c(0,58),
+   xlab = "1520 rep 1 (%)",
+   ylab = "1520 rep 2 (%)",
+   col="grey50", 
+   las = 1,
+   bg=CPCOLS[Hmisc::cut2(basemean, c(0,0.00001,0.0001,0.001,0.002,0.004,0.008,0.016))]); text(3,56,"(0)", cex=.7); text(3,23,"(0)", cex=.7); text(19.7,0,"(0)",cex=.7); text(15.7,4,"(0.006%)",cex=.7,adj=c(.5))
+```
+
+# QC,assembly summary
+# 
+
+
+
+
+```{r fig.height=5, fig.width=5}
+library(Rtsne)
+set.seed(42)
+tsne= Rtsne(t(lm), perplexity = 10)
+CPCOLS = c("brown1", "cyan3", "dodgerblue", "gold", "gray1", "gray1", "dodgerblue2", "brown1", "gray1", "gray1", "gray1", "gray1", "gray1", "gray1", "cyan3", "gray1", "gray1", "gray1", "gray39", "gray1", "gold", "gray1", "gray1", "gray1", "gray1", "gray1", "cadetblue4", "cadetblue4", "cadetblue4", "cadetblue4", "gray39", "gray40", "gray40", "gray40")
+plot(tsne$Y, bg = CPCOLS, pch= 21, xlim = c(-2.7,2.7), asp=1)
+```
+
+```{r}
+as.data.frame(lm) %>% rownames_to_column("tcr") %>% write_tsv("lm.txt")
+```
+
+```{julia, engine.path = '/home/users/kjyi/bin/julia'}
+using DelimitedFiles
+using Distances
+
+lm = readdlm("lm.txt", '\t', '\n', header = true)
+distances = [
+    Euclidean(),
+    SqEuclidean(),
+    Cityblock(),
+    TotalVariation(),
+    Chebyshev(),
+    Hamming(),
+    Jaccard(),
+    BrayCurtis(),
+    CosineDist(),
+    CorrDist(),
+    ChiSqDist(),
+    JSDivergence(),
+    SpanNormDist(),
+    BhattacharyyaDist(),
+    HellingerDist(),
+    MeanAbsDeviation(),
+    MeanSqDeviation(),
+    RMSDeviation(),
+    NormRMSDeviation()
+];
+outputs = [
+    "Euclidean.pwm.txt",
+    "SqEuclidean.pwm.txt",
+    "Cityblock.pwm.txt",
+    "TotalVariation.pwm.txt",
+    "Chebyshev.pwm.txt",
+    "Hamming.pwm.txt",
+    "Jaccard.pwm.txt",
+    "BrayCurtis.pwm.txt",
+    "CosineDist.pwm.txt",
+    "CorrDist.pwm.txt",
+    "ChiSqDist.pwm.txt",
+    "JSDivergence.pwm.txt",
+    "SpanNormDist.pwm.txt",
+    "BhattacharyyaDist.pwm.txt",
+    "HellingerDist.pwm.txt",
+    "MeanAbsDeviation.pwm.txt",
+    "MeanSqDeviation.pwm.txt",
+    "RMSDeviation.pwm.txt",
+    "NormRMSDeviation.pwm.txt"
+];
+x = lm[1][:,2:end]
+x = convert(Array{Float64,2}, x)
+for i in 1:size(distances,1)
+    E = pairwise(distances[i], x, dims = 2)
+    o = vcat(lm[2], [lm[2][2:end] E])
+    o[1,1] = "dist"
+    writedlm("distances/"*outputs[i], o)
+end
+
+b = x.>0
+
+E = pairwise(RogersTanimoto(), b, dims = 2)
+o = vcat(lm[2], [lm[2][2:end] E])
+o[1,1] = "dist"
+writedlm("distances/"*"RogersTanimoto.pwm.txt", o)
+
+println("done")
+```
+
+
+```{r}
+library(tidyverse)
+distances <- dir("distances",full.names = T) %>%
+  lapply(function(x){
+    read_tsv(x, col_types = cols(dist = "c", .default = "d")) %>%
+      as.data.frame %>%
+      column_to_rownames("dist") %>%
+      as.matrix()
+    })
+names(distances) <- dir("distances") %>%
+  stringr::str_replace(".pwm.txt","")
+
+library(Rtsne)
+
+mycol = c("brown1", "cyan3", "dodgerblue", "gold", "gray1", "gray1", "dodgerblue2", "brown1", "gray1", "gray1", "gray1", "gray1", "gray1", "gray1", "cyan3", "gray1", "gray1", "gray1", "gray39", "gray1", "gold", "gray1", "gray1", "gray1", "gray1", "gray1", "cadetblue4", "cadetblue4", "cadetblue4", "cadetblue4", "gray39", "gray40", "gray40", "gray40")
+corrplot::corrplot(max(distances[[6]])-distances[[6]], order = "hclust", is.corr = F, title = "Correlation Distance", mar = c(0,0,1,0), method = "square", tl.col = "black", tl.pos='n')
+```
+
+
+```{r fig.height=20, fig.width=30}
+names(distances)
+par(mfrow=c(4,5));for(i in 1:length(distances)){
+  try(corrplot::corrplot(max(distances[[i]])-distances[[i]], order = "hclust", is.corr = F, title = names(distances)[i], mar = c(0,0,1,0), method = "square", tl.col = "black"))
+}
+```
+
+```{r fig.height=12, fig.width=12}
+par(mfrow=c(3,3))
+for(i in 1:length(distances)){
+  set.seed(42)
+  perplexity = 11
+  tsne = Rtsne(distances[[i]], is_distance = T, perplexity = perplexity);
+  plot(tsne$Y, bg = mycol, asp=1, pch = 21, 
+         main = names(distances)[i])
+}
+
+```
+
+
+
+```{r fig.height=6, fig.width=6}
+tsne = Rtsne(distances[[6]], is_distance = T, perplexity = 11)
+plot(tsne$Y, bg = mycol, xlim = c(-2.7,2.7), asp=1, pch = 21, main = names(distances)[6]);polygon(tsne$Y[c(19,31:34),]);polygon(tsne$Y[c(24,7,3,20,26),]);polygon(tsne$Y[c(22,5,16,23),]);polygon(tsne$Y[c(9,6,11),]);polygon(tsne$Y[c(29,13),])
+```
+
+```{r fig.height=18, fig.width=24}
+par(mfrow = c(4,5),mar=c(1,2,2,1)); for(i in 1:20){ #length(distances)
+  perplexity = 11
+  # set.seed(42)
+  tsne = Rtsne(distances[[i]], is_distance = T, perplexity = perplexity)
+  plot(tsne$Y, 
+       bg = mycol, 
+       # xlim = c(-2.7,2.7),
+       asp=1,
+       cex=2,
+       lwd=0.6,
+       xaxt='n',yaxt='n',xlab="",ylab="",
+       pch = 21, main = names(distances)[i])
+  polygon(tsne$Y[c(19,31:34),])
+  polygon(tsne$Y[c(24,7,3,20,26),])
+  polygon(tsne$Y[c(22,5,16,23),])
+  polygon(tsne$Y[c(9,6,11),])
+  polygon(tsne$Y[c(29,13),])
+}
+
+
+```
+
+```{r fig.height=9, fig.width=10}
+i = 9
+  perplexity = 11
+  # set.seed(42)
+  tsne = Rtsne(distances[[i]], is_distance = T, perplexity = perplexity)
+  plot(tsne$Y, 
+       bg = mycol, 
+       xlim = c(-2.7,2.7),
+       asp=1, 
+       pch = 21, main = names(distances)[i])
+  polygon(tsne$Y[c(19,31:34),])
+  polygon(tsne$Y[c(24,7,3,20,26),])
+  polygon(tsne$Y[c(22,5,16,23),])
+  polygon(tsne$Y[c(9,6,11),])
+  polygon(tsne$Y[c(29,13),])
+
+
+```
+
+
+
+```{r fig.height=10, fig.width=10}
+lm = read_tsv("lm.txt") %>% as.data.frame %>% column_to_rownames("tcr")
+```
+
+
+```{r, fig.height = 15, fig.width=10}
+
+as.matrix(lm) %>% {ifelse(.>0, 1,0)} %>% t %>% image(xlab = "", ylab = "", axes = F); axis(side = 1, at=((1:ncol(lm))-1)/(ncol(lm)-1), labels=colnames(lm), cex.axis=0.9, las=2)
+
+```
+
+```{r}
+as.matrix(lm) %>% {ifelse(.>0, 1,0)} %>% rowSums %>% {.>2} %>% table
+```
+
+
+
+
+```{r fig.height=8, fig.width=8}
+# library(heatmaply)
+my_cor <- cor(lm)
+corrplot::corrplot(my_cor,order = "hclust",hclust.method = "ward.D")
+```
+
+```{r fig.height=10, fig.width=10}
+i = 6
+hc <- hclust(d = as.dist(max(distances[[i]])-distances[[i]]),method = "ward.D");plot(hc)
+```
+
+```{r fig.height=10, fig.width=10}
+names(distances)
+i = 6
+corrplot::corrplot(max(distances[[i]])-distances[[i]], order = "hclust", hclust.method = "complete", is.corr = F, title = names(distances)[i], mar = c(0,0,1,0), method = "square", tl.col = "black")
+```
+
+
+
+
