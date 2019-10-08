@@ -4,6 +4,7 @@ library(iNEXT)
 library(vegan)
 library(doMC)
 library(Hmisc)
+library(ComplexHeatmap)
 registerDoMC(24)
 counts <- read_tsv("tcr_counts.txt") %>%
   as.data.frame() %>% column_to_rownames("count") %>% as.matrix()
@@ -257,8 +258,8 @@ A.std.sub2<- foreach(i = 7:35, .combine=cbind) %dopar% {
   tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.001) %>% {-.}
   pmax(tmp-tmp.cutoff,0)
 }
-colnames(A.std.sub1) <- colnames(A.std)[7:35]
-colnames(A.std.sub2) <- colnames(A.std)[7:35]
+colnames(A.std.sub1) <- colnames(A)[7:35]
+colnames(A.std.sub2) <- colnames(A)[7:35]
 
 A.std.cutoff1 <- foreach(i = 7:35, .combine=c) %dopar% {
   tmp <- A.std1[,i]-A.std1[,1]
@@ -271,7 +272,7 @@ A.std.cutoff2 <- foreach(i = 7:35, .combine=c) %dopar% {
 names(A.std.cutoff1) <- colnames(A)[7:35] 
 names(A.std.cutoff2) <- colnames(A)[7:35]
 
-# example histogram and scatterplot
+# example histogram and scatterplot ----
 par(mfcol = c(2,4), mar = c(5,4,3,1),oma=c(0,0,0,0))
 for(i in c(7,10,15,20)){
   tmp <- A.std[,i]-A.std[,1]
@@ -286,7 +287,7 @@ for(i in c(7,10,15,20)){
   abline( tmp.cutoff,1,col="red",lty=2)
 }
 
-# plot adj.count.sum, number of positive clone, and cutoffs
+# plot adj.count.sum, number of positive clone, and cutoffs ----
 par(mfcol = c(2,3))
 barplot(colSums(A.std.sub1), main = "Sum of adjusted,nq-subtracted count, q=2660")
 barplot(colSums(A.std.sub2), main = "Sum of adjusted,nq-subtracted count, q=1372")
@@ -295,5 +296,142 @@ barplot(colSums(A.std.sub2>0), main = "clone count, q=1372")
 barplot(A.std.cutoff1, main = "0.001 quantile of negative values of A_adj-B_adj with q=2660")
 barplot(A.std.cutoff2, main = "0.001 quantile of negative values of A_adj-B_adj with q=1372")
 
+
+# save.image("~/Projects/cocult/cocult2/snapshot_20191008.RData")
+# load("~/Projects/cocult/cocult2/snapshot_20191008.RData")
+
+
+# structure of T cell response
+A.std2[1:5,1:8]
+A.std.sub2[1:5,1:8]
+
+## heatmap basic
+
+cor(A.std.sub2) %>%
+  {.[.==1]<-NA;.[is.na(.)]<-max(.,na.rm=T);.} %>%
+  Heatmap(col=RColorBrewer::brewer.pal(9,"Blues"), 
+          width = unit(10,"cm"),height=unit(10,"cm"),
+          name = "Correlation coef",
+          top_annotation = HeatmapAnnotation(foo1 = 1:29,
+                                             sum = anno_barplot(colSums(A.std.sub2)),
+                                             nclone=anno_barplot(colSums(A.std.sub2>0))),
+          right_annotation = rowAnnotation(foo2 = 29:1))
+
+group_info <- tribble(~name,       ~type,   ~pearson_group,
+                      "basesum",   "base",  1,
+                      "35.base",   "base",  1,
+                      "30.base",   "base",  1,
+                      "31.base",   "base",  1,
+                      "32.base",   "base",  1,
+                      "33.base",   "base",  1,
+                      "26.rest",   "rest",  0,
+                      "27.rest",   "rest",  0,
+                      "28.rest",   "rest",  4,
+                      "29.rest",   "rest",  0,
+                      "03.1516",   "1516",  3,
+                      "07.1516",   "1516",  3,
+                      "08.1520",   "1520",  0,
+                      "01.1520_c", "1520",  0,
+                      "04.1599",   "1599",  0,
+                      "20.1599",   "1599",  0,
+                      "02.1459",   "1459",  0,
+                      "15.1459",   "1459",  0,
+                      "05.1514",   "other", 2,
+                      "06.1449",   "other", 0,
+                      "09.1546",   "other", 5,
+                      "10.1543",   "other", 0,
+                      "11.1590",   "other", 5,
+                      "12.1508",   "other", 0,
+                      "13.1560",   "other", 4,
+                      "14.1496",   "other", 0,
+                      "16.1571",   "other", 2,
+                      "17.1530",   "other", 0,
+                      "18.1510",   "other", 0,
+                      "21.1569",   "other", 2,
+                      "22.1499",   "other", 2,
+                      "24.1466",   "other", 0,
+                      "23.1461",   "other", 3,
+                      "19.1577",   "other", 3,
+                      "25.1583",   "other", 3)
+tmp.type.col <- structure(unlist(plyr::revalue(group_info$type,list("base"="grey","rest"="blue","1516"="red","1520"="orange",
+                                                    "1599"="purple","1459"="green"), warn_missing = F)), group_info$type)
+
+cor(A.std2[,-1]) %>%
+  {.[.==1]<-NA;.[is.na(.)]<-max(.,na.rm=T);.} %>%
+  Heatmap(col=RColorBrewer::brewer.pal(9,"Blues"), 
+          width = unit(12,"cm"),height=unit(12,"cm"),
+          name = "Correlation coef",
+          top_annotation = HeatmapAnnotation(replicates=group_info$type[-1],
+                                             sum_adj = anno_barplot(colSums(A.std2[,-1])),
+                                             nclone = anno_barplot(colSums(A.std2[,-1]>0)),
+                                             col = list(replicates=c("base"="grey60","rest"="grey30","1516"="red","1520"="orange",
+                                                               "1599"="purple","1459"="green","other"="white"))))
+
+# top covering clones
+hist(rowSums(A.std.sub2>0),ylim=c(0,100),xlim=c(0,34))
+table(rowSums(A.std.sub2>0))
+
+sum(rowSums(A.std.sub2>0)>15)
+
+clones_cover_15 <- rowSums(A.std.sub2>0)>15
+
+
+A.std2[rowSums(A.std.sub2>0)>17,] %>% 
+  Heatmap(.,
+          cell_fun = function(j, i, x, y, width, height, fill) {
+            grid.text(sprintf("%.0f", .[i, j]), x, y, gp = gpar(fontsize = 10,col="white"))
+          },
+          width = unit(35,"cm"),height=unit(20,"cm"),
+          clustering_distance_columns = "spearman",
+          clustering_distance_rows = "spearman", 
+          clustering_method_rows = "ward.D",
+          clustering_method_columns="ward.D",
+          col=circlize::colorRamp2(c(0:11*60),c("black",rev(RColorBrewer::brewer.pal(11,"Spectral")))),
+          top_annotation = HeatmapAnnotation(replicates=group_info$type,
+                                             pearson_group=group_info$pearson_group,
+                                             sum_adj = anno_barplot(colSums(A.std2)),
+                                             nclone = anno_barplot(colSums(A.std2>0)),
+                                             col = list(replicates=c("base"="grey60","rest"="grey30","1516"="red","1520"="orange",
+                                                                     "1599"="purple","1459"="green","other"="white"))))
+
+
+## distances ----
+pairwise <- function(A,fun){
+  n = ncol(A)
+  o = matrix(0,ncol=n,nrow=n)
+  for (i in 1:n) {
+    for (j in 1:i) {
+      o[i,j] = fun(A[,i],A[,j])
+      o[j,i] = o[i,j]
+    }
+  }
+  colnames(o) = colnames(A)
+  rownames(o) = colnames(A)
+  as.dist(o)
+}
+
+jaccard <- function(A){
+  
+}
+bray <- function(x,y){
+  w=ifelse(x==0&y==0,0,1)
+  sum(abs(x-y))/sum(abs(x+y)*w)
+}
+
+tmp <- A.std2[rowSums(A.std.sub2>0)>15,]
+tmp.f <- function(A){pairwise(A,bray)}
+tmp.d <- tmp.f(tmp)
+as.matrix(tmp.d)[1:5,1:5]
+
+
+x=runif(10)
+y=runif(10)
+bray(1:10,runif(10))
+pearson <- function(A){
+  
+}
+manhattan <- function(x,y){
+  
+}
 
 
