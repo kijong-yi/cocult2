@@ -158,7 +158,7 @@ rare <- function(l, r) {
   rrarefy(t(l),round(r*colSums(l))) %>% t
 }
 
-# 24 base, 3*10^5
+# 24 base, 3*10^5 
 
 set.seed(42)
 S <- rrarefy(population,3*10^5) %>% t()
