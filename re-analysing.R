@@ -13,7 +13,7 @@ colnames(counts)[1] <- "35.base"
 
 ## basic information ----
 par(mfrow = c(1,2))
-barplot(colSums(counts),horiz = T, las = 2, main = "number of molecule captured")
+barplot(colSums(counts),horiz = T, las = 2, main ="number of molecule captured")
 barplot(colSums(counts>0),horiz = T, las = 2, main = "number of clone detected")
 
 
@@ -73,29 +73,40 @@ legend("topright","expanded", fill = "grey50",bty="n")
 
 abline(h = 100000, lty=2)
 barplot(colSums(S>0), col = "grey50", ylab = "species richness")
-plot(counts.inext,se=F,show.legend = F,show.main = F,xlim = c(0,150000),ylim=c(0,35000), col = "grey")
+plot(counts.inext,se=F,show.legend = F,show.main = F,xlim = c(0,150000),
+     ylim=c(0,35000), col = "grey")
 lines(colSums(S),colSums(S>0),col="blue",lty = 2)
 points(colSums(S),colSums(S>0))
 abline(v= c(8000,50000,100000),h=c(5000,7500), lty = 2, col = "grey")
-plot(counts.inext,se=F,show.legend = F,show.main = F,xlim = c(0,150000),ylim=c(0,10000), col = "grey")
+plot(counts.inext,se=F,show.legend = F,show.main = F,xlim = c(0,150000),
+     ylim=c(0,10000), col = "grey")
 lines(colSums(S),colSums(S>0),type = 'l', col = "blue", lty =2)
 points(colSums(S),colSums(S>0), xlim = c(0,150000),ylim=c(0,10000))
 abline(v= c(8000,50000,100000),h=c(5000,7500), lty = 2, col = "grey")
-mtext("Simulation-based estimation of amplification-decay rate",outer = T, cex = 1.2, font=2,line=2.5)
-mtext("initial = 3*10^5, seed = 5000, seed.amp.rate = 0.363, decay.rate = 0.85, cycle = 19",outer = T, cex = 1, font=1,line=1)
+mtext("Simulation-based estimation of amplification-decay rate",outer = T, 
+      cex = 1.2, font=2,line=2.5)
+mtext(paste(
+  "initial = 3*10^5, seed = 5000, seed.amp.rate = 0.363,",
+  "decay.rate = 0.85, cycle = 19"),
+      outer = T, cex = 1, font=1,line=1)
 
 ## questional  ----
 par(mfrow=c(2,2),mar = c(4,4,1,1),oma=c(0,0,5,0), asp=1,pty="s")
-plot(rowSums(counts[,1:5]), counts[,6], xlim = c(0,1000), ylim = c(0,1000), col=  "#00000030")
-plot(rowSums(counts[,1:5]), counts[,6], xlim = c(0,100), ylim = c(0,100), col=  "#00000030")
-plot(rowSums(counts[,1:5]), counts[,7], xlim = c(0,1000), ylim = c(0,1000), col=  "#00000030")
-plot(rowSums(counts[,1:5]), counts[,7], xlim = c(0,100), ylim = c(0,100), col=  "#00000030")
+plot(rowSums(counts[,1:5]), counts[,6], xlim = c(0,1000), ylim = c(0,1000), 
+     col=  "#00000030")
+plot(rowSums(counts[,1:5]), counts[,6], xlim = c(0,100), ylim = c(0,100), 
+     col=  "#00000030")
+plot(rowSums(counts[,1:5]), counts[,7], xlim = c(0,1000), ylim = c(0,1000), 
+     col=  "#00000030")
+plot(rowSums(counts[,1:5]), counts[,7], xlim = c(0,100), ylim = c(0,100), 
+     col=  "#00000030")
 mtext("which clones are expanding?", cex=1.2,font=2,outer=T)
 
 
 ## seed size and amp rate distribution based on top clones ----
 par(mfrow=c(2,1),mar = c(4,4,1,1),oma=c(0,0,0,0))
-h2 <- counts[,6:34] %>% sweep(2,colSums(.),`/`) %>% hist(breaks = 30, ylim = c(0,100),col="grey",main="")
+h2 <- counts[,6:34] %>% sweep(2,colSums(.),`/`) %>% 
+  hist(breaks = 30, ylim = c(0,100),col="grey",main="")
 h <- h2
 h$counts <- rev(cumsum(rev(h$counts)))
 h$density <- rev(cumsum(rev(h$density)))
@@ -110,7 +121,8 @@ text(0.3,80,expression(x^2*y==0.36),col="darkgreen")
 text(0.3,60,expression(x^2.5*y==0.161),col="blue")
 
 u <- (3*10^5)/rarefy(population, 3*10^5)
-seed.distribution.summary <- data.frame("%" = c(40,20,10,7,5,3,1,0.5,0.1), check.names=F) %>%
+seed.distribution.summary <- data.frame("%" = c(40,20,10,7,5,3,1,0.5,0.1), 
+                                        check.names=F) %>%
   mutate(`cumulative n.clone` = h$counts[match(`%`/100,h$breaks)],
          `n.clone in 3*10^5 * 29` = diff(c(0,`cumulative n.clone`)),
          `extrapolated cumsum` = 805/`%`^1.5,
@@ -119,7 +131,9 @@ seed.distribution.summary <- data.frame("%" = c(40,20,10,7,5,3,1,0.5,0.1), check
          `proportion cumsum %` = cumsum(`proportion sum %`),
          ad = ((10^5*`%`/100)/u)^(1/19),
          a = `ad`/0.85,
-         `n.clone in population` = `extrapolated n.clone`*length(population)/sum(drarefy(population,300000))/29) %>% round(2)
+         `n.clone in population` = 
+`extrapolated n.clone`*length(population)/sum(drarefy(population,300000))/29)%>%
+  round(2)
 
 htmlTable::interactiveTable(seed.distribution.summary) 
 
@@ -129,7 +143,6 @@ spawn_specificity <- function(){
   ai = 1:length(a)
   cv = rep("black", length(population))
   ct = colorRampPalette(RColorBrewer::brewer.pal(11,"Spectral"))(8) %>% rev
-  # ct = c("#5E4FA2", "#3F96B7", "#88CFA4", "#D7EF9B", "#FFFFBF", "#FDD380", "#F88D51", "#DC494C", "#9E0142")
   for(i in 1:8){
     size = round(seed.distribution.summary$`n.clone in population`[i])
     sampled <- sample(ai,size)
@@ -164,8 +177,10 @@ combine_simul <- function(x,y){list(count=cbind(x$count,y$count),
                                     color = cbind(x$color,y$color))}
 
 S1 <- foreach(i=1:20, .combine = combine_simul) %dopar% {simul()}
-# S2 <- foreach(i=1:20, .combine = combine_simul) %dopar% {simul(S=S.init)} # fixed initiation
-# S3 <- foreach(i=1:20, .combine = combine_simul) %dopar% {simul(sp=sp)}    # fixed specificity
+# S2 <- foreach(i=1:20, .combine = combine_simul) %dopar% {simul(S=S.init)} 
+# fixed initiation
+# S3 <- foreach(i=1:20, .combine = combine_simul) %dopar% {simul(sp=sp)}    
+# fixed specificity
 
 
 colnames(S1$count) <- paste0("S1_",1:ncol(S1$count))
@@ -186,13 +201,20 @@ S.inext <- iNEXT(S, q=0, knots=200, se=F, conf=0.95, nboot=1,doMC = T)
 par(mfrow=c(2,3))
 plot(S.inext, se=F, show.main = F)
 
-plot(S[,"B1"],S[,"S1_1"], col=S.color[,1],xlim=c(0,2800),ylim = c(0,2800), cex=ifelse(S.color[,1] == "#00000030", 1,2), pch=16);abline(0,1, lty = 2, col="grey")
-plot(S[,"B1"],S[,"S1_1"], col=S.color[,1],xlim=c(0,150),ylim = c(0,150), cex=ifelse(S.color[,1] == "#00000030", 1,2), pch=16);abline(0,1, lty = 2, col="grey")
+plot(S[,"B1"],S[,"S1_1"], col=S.color[,1],xlim=c(0,2800),ylim = c(0,2800), 
+     cex=ifelse(S.color[,1] == "#00000030", 1,2), pch=16)
+abline(0,1, lty = 2, col="grey")
+plot(S[,"B1"],S[,"S1_1"], col=S.color[,1],xlim=c(0,150),ylim = c(0,150), 
+     cex=ifelse(S.color[,1] == "#00000030", 1,2), pch=16)
+abline(0,1, lty = 2, col="grey")
 
-plot(rowSums(counts[,1:5]), counts[,"03.1516"], col = "#00000030", xlim = c(0,2800), ylim = c(0,2800));abline(0,1, lty = 2, col="grey")
-plot(rowSums(counts[,1:5]), counts[,"03.1516"], col = "#00000030", xlim = c(0,150), ylim = c(0,150));abline(0,1, lty = 2, col="grey")
+plot(rowSums(counts[,1:5]), counts[,"03.1516"], col = "#00000030", 
+     xlim = c(0,2800), ylim = c(0,2800));abline(0,1, lty = 2, col="grey")
+plot(rowSums(counts[,1:5]), counts[,"03.1516"], col = "#00000030", 
+     xlim = c(0,150), ylim = c(0,150));abline(0,1, lty = 2, col="grey")
 
-plot(S.inext$iNextEst[[21]]$m,S.inext$iNextEst[[21]]$qD, type = "l", xlim = c(0,60000), ylim = c(0,15000))
+plot(S.inext$iNextEst[[21]]$m,S.inext$iNextEst[[21]]$qD, type = "l", 
+     xlim = c(0,60000), ylim = c(0,15000))
 lines(S.inext$iNextEst[[1]]$m,S.inext$iNextEst[[1]]$qD)
 abline(h=5000,v=0,lty=2,col="grey")
 text(40000,10000,expression(X_adj== X*over(a+b,a)) )
@@ -227,7 +249,8 @@ A.std2 = A %>% sweep(2,A.sizefactor2, `/`)
 # plot
 
 par(mfrow = c(2,3))
-plot(S.inext$iNextEst[[21]]$m,S.inext$iNextEst[[21]]$qD, type = "l", xlim = c(0,60000), ylim = c(0,15000))
+plot(S.inext$iNextEst[[21]]$m,S.inext$iNextEst[[21]]$qD, type = "l", 
+     xlim = c(0,60000), ylim = c(0,15000))
 lines(S.inext$iNextEst[[1]]$m,S.inext$iNextEst[[1]]$qD)
 abline(h=5000,v=0,lty=2,col="grey")
 text(40000,10000,expression(X_adj== X*over(a+b,a)) )
@@ -238,9 +261,11 @@ abline(h=sort(colSums(A>0))[c(1,3)],col=c("red","blue"))
 
 colSums(A>0) %>% sort %>% .[1:5]
 
-plot(A.inext, se = F, show.main = F, show.legend = F, col = "grey",ylim=c(0,20000))
+plot(A.inext, se = F, show.main = F, show.legend = F, col = "grey",
+     ylim=c(0,20000))
 abline(h=sort(colSums(counts>0))[c(1,3)],col=c("red","blue"))
-text(120000,sort(colSums(A>0))[c(1,3)],sort(colSums(A>0))[c(1,3)],col=c("red","blue"), adj=c(1,-0.5))
+text(120000,sort(colSums(A>0))[c(1,3)],sort(colSums(A>0))[c(1,3)],
+     col=c("red","blue"), adj=c(1,-0.5))
 sort(colSums(A>0))[1:5]
 
 barplot(t(1/A.sizefactor1), las = 2, main = "size factor for q=2660")
@@ -277,10 +302,15 @@ par(mfcol = c(2,4), mar = c(5,4,3,1),oma=c(0,0,0,0))
 for(i in c(7,10,15,20)){
   tmp <- A.std[,i]-A.std[,1]
   tmp.cutoff <- tmp %>% {.[.<0]} %>% quantile(0.001) %>% {-.}
-  hist(tmp,freq=F,breaks=c(-Inf,-60:60*5,Inf),xlim=c(-300,300),ylim=c(0,0.001),main=colnames(A.std)[i])
+  hist(tmp,freq=F,breaks=c(-Inf,-60:60*5,Inf),xlim=c(-300,300),ylim=c(0,0.001),
+       main=colnames(A.std)[i])
   abline(v=c(-tmp.cutoff,tmp.cutoff),col=c("blue","red"),lty=2)
-  legend("topright",legend=c(sum(tmp > tmp.cutoff),sum(tmp < -tmp.cutoff)),pch=c("+","-"),bty="n")
-  plot(A.std[,1], A.std[,i], xlab="",ylab="", col = ifelse(tmp > tmp.cutoff,"red",ifelse(tmp < -tmp.cutoff,"blue","#00000020")), xlim = c(0,200),ylim=c(0,200),asp=1,
+  legend("topright",legend=c(sum(tmp > tmp.cutoff),sum(tmp < -tmp.cutoff)),
+         pch=c("+","-"),bty="n")
+  plot(A.std[,1], A.std[,i], xlab="",ylab="", 
+       col = ifelse(tmp > tmp.cutoff,"red",
+                    ifelse(tmp < -tmp.cutoff,"blue","#00000020")), 
+       xlim = c(0,200),ylim=c(0,200),asp=1,
        main = colnames(A.std)[i]);
   abline(0,1,col="grey",lty=2);
   abline(-tmp.cutoff,1,col="blue",lty=2)
@@ -289,12 +319,16 @@ for(i in c(7,10,15,20)){
 
 # plot adj.count.sum, number of positive clone, and cutoffs ----
 par(mfcol = c(2,3))
-barplot(colSums(A.std.sub1), main = "Sum of adjusted,nq-subtracted count, q=2660")
-barplot(colSums(A.std.sub2), main = "Sum of adjusted,nq-subtracted count, q=1372")
+barplot(colSums(A.std.sub1), 
+        main = "Sum of adjusted,nq-subtracted count, q=2660")
+barplot(colSums(A.std.sub2), 
+        main = "Sum of adjusted,nq-subtracted count, q=1372")
 barplot(colSums(A.std.sub1>0), main = "clone count, q=2660")
 barplot(colSums(A.std.sub2>0), main = "clone count, q=1372")
-barplot(A.std.cutoff1, main = "0.001 quantile of negative values of A_adj-B_adj with q=2660")
-barplot(A.std.cutoff2, main = "0.001 quantile of negative values of A_adj-B_adj with q=1372")
+barplot(A.std.cutoff1, 
+        main = "0.001 quantile of negative values of A_adj-B_adj with q=2660")
+barplot(A.std.cutoff2, 
+        main = "0.001 quantile of negative values of A_adj-B_adj with q=1372")
 
 
 # save.image("~/Projects/cocult/cocult2/snapshot_20191008.RData")
@@ -312,9 +346,10 @@ cor(A.std.sub2) %>%
   Heatmap(col=RColorBrewer::brewer.pal(9,"Blues"), 
           width = unit(10,"cm"),height=unit(10,"cm"),
           name = "Correlation coef",
-          top_annotation = HeatmapAnnotation(foo1 = 1:29,
-                                             sum = anno_barplot(colSums(A.std.sub2)),
-                                             nclone=anno_barplot(colSums(A.std.sub2>0))),
+          top_annotation = HeatmapAnnotation(
+            foo1 = 1:29,
+            sum = anno_barplot(colSums(A.std.sub2)),
+            nclone=anno_barplot(colSums(A.std.sub2>0))),
           right_annotation = rowAnnotation(foo2 = 29:1))
 
 group_info <- tribble(~name,       ~type,   ~pearson_group,
@@ -353,46 +388,109 @@ group_info <- tribble(~name,       ~type,   ~pearson_group,
                       "23.1461",   "other", 3,
                       "19.1577",   "other", 3,
                       "25.1583",   "other", 3)
-tmp.type.col <- structure(unlist(plyr::revalue(group_info$type,list("base"="grey","rest"="blue","1516"="red","1520"="orange",
-                                                    "1599"="purple","1459"="green"), warn_missing = F)), group_info$type)
+tmp.type.col <- structure(unlist(plyr::revalue(
+  group_info$type,list("base"="grey","rest"="blue","1516"="red","1520"="orange",
+                       "1599"="purple","1459"="green"), warn_missing = F)), 
+  group_info$type)
 
 cor(A.std2[,-1]) %>%
   {.[.==1]<-NA;.[is.na(.)]<-max(.,na.rm=T);.} %>%
   Heatmap(col=RColorBrewer::brewer.pal(9,"Blues"), 
           width = unit(12,"cm"),height=unit(12,"cm"),
           name = "Correlation coef",
-          top_annotation = HeatmapAnnotation(replicates=group_info$type[-1],
-                                             sum_adj = anno_barplot(colSums(A.std2[,-1])),
-                                             nclone = anno_barplot(colSums(A.std2[,-1]>0)),
-                                             col = list(replicates=c("base"="grey60","rest"="grey30","1516"="red","1520"="orange",
-                                                               "1599"="purple","1459"="green","other"="white"))))
+          top_annotation = HeatmapAnnotation(
+            replicates=group_info$type[-1],
+            pearson_group=as.character(group_info$pearson_group[-1]),
+            sum_adj = anno_barplot(colSums(A.std2[,-1])),
+            nclone = anno_barplot(colSums(A.std2[,-1]>0)),
+            col = list(replicates=c("base"="grey60","rest"="grey30",
+                                    "1516"="red","1520"="orange",
+                                    "1599"="purple","1459"="green",
+                                    "other"="white"),
+                       pearson_group=c("0"="white",
+                                       "1"="blue",
+                                       "2"="red",
+                                       "3"="orange",
+                                       "4"="purple",
+                                       "5"="black"))
+            )
+          )
 
-# top covering clones
-hist(rowSums(A.std.sub2>0),ylim=c(0,100),xlim=c(0,34))
-table(rowSums(A.std.sub2>0))
+# high basemeans
+tmp <- A.std2[rowSums(A.std.sub2>0)>-1 & rowMeans(A.std2[,3:6]) > 10,]
+Heatmap(tmp[,-1], name = "diversity standardized count",
+        cell_fun = function(j, i, x, y, width, height, fill) {
+          grid.text(sprintf("%.0f", tmp[,-1][i, j]),
+                    x, y, gp = gpar(fontsize = 6,col="white"))},
+        width = unit(27,"cm"),height=unit(20,"cm"),
+        clustering_distance_columns = "euclidean",
+        clustering_distance_rows = "spearman", 
+        clustering_method_rows = "ward.D",
+        clustering_method_columns="ward.D",
+        col=circlize::colorRamp2(
+          c(0:11*60),c("black",rev(RColorBrewer::brewer.pal(11,"Spectral")))),
+        right_annotation = rowAnnotation(basesum=anno_barplot(tmp[,"basesum"])),
+        top_annotation = HeatmapAnnotation(
+          replicates=group_info$type[-1],
+          pearson_group=as.character(group_info$pearson_group[-1]),
+          sum_adj = anno_barplot(colSums(A.std2)[-1]),
+          nclone = anno_barplot(colSums(A.std2>0)[-1]),
+          col = list(replicates=c("base"="grey60","rest"="grey30",
+                                  "1516"="red","1520"="orange", 
+                                  "1599"="purple","1459"="green",
+                                  "other"="white"),
+                     pearson_group=c("0"="white", "1"="blue", "2"="red",
+                                     "3"="orange", "4"="purple", "5"="black"))),
+        row_title = "33 clones with base1~4 mean > 10")
 
-sum(rowSums(A.std.sub2>0)>15)
+# common responders
+tmp <- A.std2[rowSums(A.std.sub2>0)>=15 ,]
+Heatmap(tmp[,-1], name = "diversity standardized count",
+        cell_fun = function(j, i, x, y, width, height, fill) {
+          grid.text(sprintf("%.0f", tmp[,-1][i, j]),
+                    x, y, gp = gpar(fontsize = 6,col="white"))},
+        width = unit(27,"cm"),height=unit(20,"cm"),
+        clustering_distance_columns = "euclidean",
+        clustering_distance_rows = "euclidean", 
+        clustering_method_rows = "ward.D",
+        clustering_method_columns="ward.D",
+        col=circlize::colorRamp2(
+          c(0:11*60),c("black",rev(RColorBrewer::brewer.pal(11,"Spectral")))),
+        right_annotation = rowAnnotation(basesum=anno_barplot(tmp[,"basesum"])),
+        top_annotation = HeatmapAnnotation(
+          replicates=group_info$type[-1],
+          pearson_group=as.character(group_info$pearson_group[-1]),
+          sum_adj = anno_barplot(colSums(A.std2)[-1]),
+          nclone = anno_barplot(colSums(A.std2>0)[-1]),
+          col = list(replicates=c("base"="grey60","rest"="grey30",
+                                  "1516"="red","1520"="orange", 
+                                  "1599"="purple","1459"="green",
+                                  "other"="white"),
+                     pearson_group=c("0"="white", "1"="blue", "2"="red",
+                                     "3"="orange", "4"="purple", "5"="black"))),
+        row_title = "35 clones respond(>0) in >=15/29 samples")
 
-clones_cover_15 <- rowSums(A.std.sub2>0)>15
 
 
-A.std2[rowSums(A.std.sub2>0)>17,] %>% 
-  Heatmap(.,
-          cell_fun = function(j, i, x, y, width, height, fill) {
-            grid.text(sprintf("%.0f", .[i, j]), x, y, gp = gpar(fontsize = 10,col="white"))
-          },
-          width = unit(35,"cm"),height=unit(20,"cm"),
-          clustering_distance_columns = "spearman",
-          clustering_distance_rows = "spearman", 
-          clustering_method_rows = "ward.D",
-          clustering_method_columns="ward.D",
-          col=circlize::colorRamp2(c(0:11*60),c("black",rev(RColorBrewer::brewer.pal(11,"Spectral")))),
-          top_annotation = HeatmapAnnotation(replicates=group_info$type,
-                                             pearson_group=group_info$pearson_group,
-                                             sum_adj = anno_barplot(colSums(A.std2)),
-                                             nclone = anno_barplot(colSums(A.std2>0)),
-                                             col = list(replicates=c("base"="grey60","rest"="grey30","1516"="red","1520"="orange",
-                                                                     "1599"="purple","1459"="green","other"="white"))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## distances ----
@@ -433,5 +531,4 @@ pearson <- function(A){
 manhattan <- function(x,y){
   
 }
-
 
