@@ -480,19 +480,6 @@ Heatmap(tmp[,-1], name = "diversity standardized count",
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## distances ----
 pairwise <- function(A,fun){
   n = ncol(A)
