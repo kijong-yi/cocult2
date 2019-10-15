@@ -470,8 +470,7 @@ Heatmap(tmp[,-1], name = "diversity standardized count",
                                      "3"="orange", "4"="purple", "5"="black"))),
         row_title = "35 clones respond(>0) in >=15/29 samples")
 
-
-
+A.std2 %>% t %>% as.data.frame %>% tibble::rownames_to_column("sample") %>% write_tsv("A.std2.t.tsv")
 
 
 
